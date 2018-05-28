@@ -372,7 +372,7 @@ class Main:
     def thu_mtg(self, start_time, end_time, day_name, room_name, room_num):
 
         """
-        鈴木の予約: 社内定例（木曜16:00-18）
+        定例（木曜16:00-18）
 
         """
 
@@ -508,20 +508,20 @@ if __name__ == '__main__':
     """
     # 開始時間, 終了時間, 会議室名, 会議室番号の順です。最後の引数は、11など会議室の該当数字(上記参照)の箇所のみご変更ください。
 
-    # MUJI会議
+    # 会議
     #muji_mtg = Main()
     # muji_mtg.tue_mtg('11:00', '12:00', '(火)', '大会議室', '//div[@class="tl ui-selectee"][@data-timeline="2"]')　
 
-    # ビジシス定例
+    # 定例
     ndbs_mtg = Main()
     ndbs_mtg.thu_mtg('16:00', '18:00', '(木)', 'South_Terrace', '//div[@class="tl ui-selectee"][@data-timeline="3"]')
 
 
     # 下記が毎日予約する場合に変更する箇所です
-    # OMS試験朝会用
+    # 朝会用
     omsTest_mtg = Main()
     # omsTest_mtg.everyday_mtg('09:30', '19:00', 'N-E', '//div[@class="tl ui-selectee"][@data-timeline="11"]')
 
-    # 平塚が予約している朝会用
+    # 朝会用
     hiratuka_mtg = Main()
     hiratuka_mtg.everyday_mtg('09:30', '10:15', 'S-E', '//div[@class="tl ui-selectee"][@data-timeline="16"]')
