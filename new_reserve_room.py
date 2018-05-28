@@ -15,11 +15,10 @@ from selenium.common.exceptions import ElementNotInteractableException
 import time
 import datetime
 from dateutil.relativedelta import relativedelta
-import calendar
 import jholiday
 
 # IE用ドライバー
-driver = webdriver.Ie('C:/Users/U621625/PycharmProjects/Work/selenium/webdriver/IEDriverServer.exe')
+driver = webdriver.Ie('パス')
 
 """
 会議室を取る日にちを決める
@@ -39,9 +38,9 @@ url = 'https://gg2.groupwide.net/iMRRoomBooking/'
 driver.get(url)
 
 # ログイン情報
-login_id = 'u621625'
+login_id = 'Uから始まるID'
 com_id = 'nttdata'
-password = 'zinger29'
+password = 'パスードを入力してください'
 
 """
 LOGIN
@@ -81,25 +80,22 @@ def get_dates():
 first, last = get_dates()
 
 
-
 class Main:
     def __init__(self):
 
         """
        属性の値　data-timeline = "x" ←　以下から該当する数字をxに記入する
 
-       1: 応接室,　2: 大会議室,　3: SouthTerrace,　4: Core-A　6: 事業部長会議室　
-       7: N-A,　8: N-B, 9: N-C, 10: N-D, 11:N-E, 12: N-F
-       13: S-A,　14: S-B, 15: S-C, 16: S-D, 17: S-E
+       1: 応接室, 　2: 大会議室, 　3: SouthTerrace, 　4: Core - A　6: FR事業部長会議室　
+       7: 流サ事業部長会議室, 　8: N -A, 9: N - B, 10: N - C, 11: N - D, 12: N - E
+       13: S - A, 　14: S - C, 15: S - D, 16: S - E
         """
         self.start_time = '11:00'  # 開始時間
         self.end_time = '12:00'  # 終了時間
         self.day_name = '(火)'  # 曜日
         self.room_name = '大会議室'  # 会議室名
         self.room_num = '//div[@class="tl ui-selectee"][@data-timeline="12"]'  # 会議室に対応するHTML属性
-        
-        self.d = ''
-        self.iter_date = today + relativedelta(months=target_month) - datetime.timedelta(days=get_month.day - self.d)  # dが増えることで日も増える
+
 
     def everyday_mtg(self, start_time, end_time, room_name, room_num):
 
@@ -122,10 +118,7 @@ class Main:
 
             try:
                 if holiday_name is None and not iter_date.weekday() == 5 and not iter_date.weekday() == 6:  # 祝日以外、平日のとき
-                    """
-                        N-E　平日　9:30-11:00を予約
 
-                    """
                     if iter_date.weekday() == 0:
                         day_name = '(月)'
                     elif iter_date.weekday() == 1:
@@ -177,90 +170,358 @@ class Main:
                 print("クリックできませんでした。")
             except selenium.common.exceptions.StaleElementReferenceException:
                 pass
-            
-    def basics(self, start_time, end_time, day_name, room_name, room_num, d, iter_date):
 
-        # for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
-          #  iter_date = today + relativedelta(months=target_month) - datetime.timedelta(days=get_month.day - d)  # dが増えることで日も増える
-        try:
-            driver.implicitly_wait(10)
-            driver.find_element_by_link_text(str(d)).click()  # 日付指定
+    def mon_mtg(self, start_time, end_time, day_name, room_name, room_num):
 
-            # 会議室を選択
-            driver.find_element_by_xpath(room_num).click()
+        """
+        会議体を記載する
 
-            # 時間選択
-            start_time_element = driver.find_element_by_name('StartTime')
-            select_start_time = Select(start_time_element)
-            select_start_time.select_by_value(start_time)
-            end_time_element = driver.find_element_by_name('EndTime')
-            select_end_time = Select(end_time_element)
-            select_end_time.select_by_value(end_time)
-            # 目的選択
-            purpose = driver.find_element_by_name('PurposeCode')
-            select_purpose = Select(purpose)
-            select_purpose.select_by_value('1')
-            driver.find_element_by_name("NumberOfUsers").send_keys('10')
-            # 予約ボタン押下
-            driver.find_element_by_xpath('//button[@class="btn blue submit-form-new"][@type="button"]').click()
-            driver.implicitly_wait(10)
+        """
 
-            # ダブルブッキングした場合
-            alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
-            if alert_msg:
-                print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
-                    end_time) + ' は既に取られています')
-                driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
-                driver.implicitly_wait(10)
-            else:
-                print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
-                    end_time) + ' は予約完了')
+        for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
+            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(
+                days=get_month.day - d)  # iが増えることで日も増える
 
-        except selenium.common.exceptions.UnexpectedAlertPresentException:
-            print(str(iter_date) + " " + day_name + " " + str(start_time) + '-' + str(end_time) + ' は祝日です')
-        except NoSuchElementException:
-            pass
-        except ElementNotInteractableException:
-            print("クリックできませんでした。")
-
-
-    def my_mtg(self, start_time, end_time, day_name, room_name, room_num):
+            # 祝日セット
+            holiday_name = jholiday.holiday_name(date=iter_date)
 
             """
             datetimeから曜日を取得
             weekdayと曜日の対応
             0: 月, 1: 火, 2: 水, 3: 木, 4: 金, 5: 土, 6: 日
-            鈴木の予約
-            定例（火曜11:00-12:00）
-            社内定例（木曜16:00-18）
+
             """
+            if holiday_name is None and iter_date.weekday() == 0: # 0は月曜日
+
+
+                try:
+                    driver.implicitly_wait(10)
+                    driver.find_element_by_link_text(str(d)).click()  # 日付指定
+
+                    # 会議室を選択
+                    driver.find_element_by_xpath(room_num).click()
+
+                    # 時間選択
+                    start_time_element = driver.find_element_by_name('StartTime')
+                    select_start_time = Select(start_time_element)
+                    select_start_time.select_by_value(start_time)
+                    end_time_element = driver.find_element_by_name('EndTime')
+                    select_end_time = Select(end_time_element)
+                    select_end_time.select_by_value(end_time)
+                    # 目的選択
+                    purpose = driver.find_element_by_name('PurposeCode')
+                    select_purpose = Select(purpose)
+                    select_purpose.select_by_value('1')
+                    driver.find_element_by_name("NumberOfUsers").send_keys('10')
+                    # 予約ボタン押下
+                    driver.find_element_by_xpath(
+                        '//button[@class="btn blue submit-form-new"][@type="button"]').click()
+                    driver.implicitly_wait(10)
+
+                    # ダブルブッキングした場合
+                    alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
+                    if alert_msg:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は既に取られています')
+                        driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
+                        driver.implicitly_wait(10)
+                    else:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は予約完了')
+
+                except selenium.common.exceptions.UnexpectedAlertPresentException:
+                    print(str(iter_date) + " " + day_name + "  " + str(start_time) + '-' + str(end_time) + ' は祝日です')
+                except NoSuchElementException:
+                    pass
+                except ElementNotInteractableException:
+                    print("クリックできませんでした。")
+
+    def tue_mtg(self, start_time, end_time, day_name, room_name, room_num):
+
+        """
+        鈴木の予約: 定例（火曜11:00-12:00）
+
+        """
 
         for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
-            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(days=get_month.day - d)  # iが増えることで日も増える
+            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(
+                days=get_month.day - d)  # iが増えることで日も増える
 
             # 祝日セット
             holiday_name = jholiday.holiday_name(date=iter_date)
 
-            if holiday_name is None:
+            """
+            datetimeから曜日を取得
+            weekdayと曜日の対応
+            0: 月, 1: 火, 2: 水, 3: 木, 4: 金, 5: 土, 6: 日
 
-                if iter_date.weekday() == 1:
-                    basics('11:00', '12:00', '(火)', '大会議室', '//div[@class="tl ui-selectee"][@data-timeline="12"]')
-                elif iter_date.weekday() == 3:
-                    basics('16:00', '18:00', '(木)', 'South-Terrace', '//div[@class="tl ui-selectee"][@data-timeline="3"]')
-                    
+            """
+            if holiday_name is None and iter_date.weekday() == 1: # 1は火曜日
+
+
+                try:
+                    driver.implicitly_wait(10)
+                    driver.find_element_by_link_text(str(d)).click()  # 日付指定
+
+                    # 会議室を選択
+                    driver.find_element_by_xpath(room_num).click()
+
+                    # 時間選択
+                    start_time_element = driver.find_element_by_name('StartTime')
+                    select_start_time = Select(start_time_element)
+                    select_start_time.select_by_value(start_time)
+                    end_time_element = driver.find_element_by_name('EndTime')
+                    select_end_time = Select(end_time_element)
+                    select_end_time.select_by_value(end_time)
+                    # 目的選択
+                    purpose = driver.find_element_by_name('PurposeCode')
+                    select_purpose = Select(purpose)
+                    select_purpose.select_by_value('1')
+                    driver.find_element_by_name("NumberOfUsers").send_keys('10')
+                    # 予約ボタン押下
+                    driver.find_element_by_xpath(
+                        '//button[@class="btn blue submit-form-new"][@type="button"]').click()
+                    driver.implicitly_wait(10)
+
+                    # ダブルブッキングした場合
+                    alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
+                    if alert_msg:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は既に取られています')
+                        driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
+                        driver.implicitly_wait(10)
+                    else:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は予約完了')
+
+                except selenium.common.exceptions.UnexpectedAlertPresentException:
+                    print(str(iter_date) + " " + day_name + "  " + str(start_time) + '-' + str(end_time) + ' は祝日です')
+                except NoSuchElementException:
+                    pass
+                except ElementNotInteractableException:
+                    print("クリックできませんでした。")
+
+
+    def wed_mtg(self, start_time, end_time, day_name, room_name, room_num):
+
+        """
+        会議体を記載する
+
+        """
+
+        for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
+            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(
+                days=get_month.day - d)  # iが増えることで日も増える
+
+            # 祝日セット
+            holiday_name = jholiday.holiday_name(date=iter_date)
+
+            """
+            datetimeから曜日を取得
+            weekdayと曜日の対応
+            0: 月, 1: 火, 2: 水, 3: 木, 4: 金, 5: 土, 6: 日
+
+            """
+            if holiday_name is None and iter_date.weekday() == 2: # 2は水曜日
+
+
+                try:
+                    driver.implicitly_wait(10)
+                    driver.find_element_by_link_text(str(d)).click()  # 日付指定
+
+                    # 会議室を選択
+                    driver.find_element_by_xpath(room_num).click()
+
+                    # 時間選択
+                    start_time_element = driver.find_element_by_name('StartTime')
+                    select_start_time = Select(start_time_element)
+                    select_start_time.select_by_value(start_time)
+                    end_time_element = driver.find_element_by_name('EndTime')
+                    select_end_time = Select(end_time_element)
+                    select_end_time.select_by_value(end_time)
+                    # 目的選択
+                    purpose = driver.find_element_by_name('PurposeCode')
+                    select_purpose = Select(purpose)
+                    select_purpose.select_by_value('1')
+                    driver.find_element_by_name("NumberOfUsers").send_keys('10')
+                    # 予約ボタン押下
+                    driver.find_element_by_xpath(
+                        '//button[@class="btn blue submit-form-new"][@type="button"]').click()
+                    driver.implicitly_wait(10)
+
+                    # ダブルブッキングした場合
+                    alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
+                    if alert_msg:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は既に取られています')
+                        driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
+                        driver.implicitly_wait(10)
+                    else:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は予約完了')
+
+                except selenium.common.exceptions.UnexpectedAlertPresentException:
+                    print(str(iter_date) + " " + day_name + "  " + str(start_time) + '-' + str(end_time) + ' は祝日です')
+                except NoSuchElementException:
+                    pass
+                except ElementNotInteractableException:
+                    print("クリックできませんでした。")
+
+
+
+    def thu_mtg(self, start_time, end_time, day_name, room_name, room_num):
+
+        """
+        鈴木の予約: 社内定例（木曜16:00-18）
+
+        """
+
+        for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
+            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(
+                days=get_month.day - d)  # iが増えることで日も増える
+
+            # 祝日セット
+            holiday_name = jholiday.holiday_name(date=iter_date)
+
+            """
+            datetimeから曜日を取得
+            weekdayと曜日の対応
+            0: 月, 1: 火, 2: 水, 3: 木, 4: 金, 5: 土, 6: 日
+
+            """
+            if holiday_name is None and iter_date.weekday() == 3: # 3は木曜日
+
+                try:
+                    driver.implicitly_wait(10)
+                    driver.find_element_by_link_text(str(d)).click()  # 日付指定
+
+                    # 会議室を選択
+                    driver.find_element_by_xpath(room_num).click()
+
+                    # 時間選択
+                    start_time_element = driver.find_element_by_name('StartTime')
+                    select_start_time = Select(start_time_element)
+                    select_start_time.select_by_value(start_time)
+                    end_time_element = driver.find_element_by_name('EndTime')
+                    select_end_time = Select(end_time_element)
+                    select_end_time.select_by_value(end_time)
+                    # 目的選択
+                    purpose = driver.find_element_by_name('PurposeCode')
+                    select_purpose = Select(purpose)
+                    select_purpose.select_by_value('1')
+                    driver.find_element_by_name("NumberOfUsers").send_keys('10')
+                    # 予約ボタン押下
+                    driver.find_element_by_xpath(
+                        '//button[@class="btn blue submit-form-new"][@type="button"]').click()
+                    driver.implicitly_wait(10)
+
+                    # ダブルブッキングした場合
+                    alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
+                    if alert_msg:
+                        print(str(iter_date) + " " + day_name + "  " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は既に取られています')
+                        driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
+                        driver.implicitly_wait(10)
+                    else:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は予約完了')
+
+                except selenium.common.exceptions.UnexpectedAlertPresentException:
+                    print(str(iter_date) + " " + day_name + " " + str(start_time) + '-' + str(end_time) + ' は祝日です')
+                except NoSuchElementException:
+                    pass
+                except ElementNotInteractableException:
+                    print("クリックできませんでした。")
+
+    def fri_mtg(self, start_time, end_time, day_name, room_name, room_num):
+
+        """
+        会議体を記載する
+
+        """
+
+        for d in range(first.day, last.day + 1, 1):  # 月の初めから最後までループ
+            iter_date = today + relativedelta(months=target_month) - datetime.timedelta(
+                days=get_month.day - d)  # iが増えることで日も増える
+
+            # 祝日セット
+            holiday_name = jholiday.holiday_name(date=iter_date)
+
+            """
+            datetimeから曜日を取得
+            weekdayと曜日の対応
+            0: 月, 1: 火, 2: 水, 3: 木, 4: 金, 5: 土, 6: 日
+
+            """
+            if holiday_name is None and iter_date.weekday() == 4: # 4は金曜日
+
+                try:
+                    driver.implicitly_wait(10)
+                    driver.find_element_by_link_text(str(d)).click()  # 日付指定
+
+                    # 会議室を選択
+                    driver.find_element_by_xpath(room_num).click()
+
+                    # 時間選択
+                    start_time_element = driver.find_element_by_name('StartTime')
+                    select_start_time = Select(start_time_element)
+                    select_start_time.select_by_value(start_time)
+                    end_time_element = driver.find_element_by_name('EndTime')
+                    select_end_time = Select(end_time_element)
+                    select_end_time.select_by_value(end_time)
+                    # 目的選択
+                    purpose = driver.find_element_by_name('PurposeCode')
+                    select_purpose = Select(purpose)
+                    select_purpose.select_by_value('1')
+                    driver.find_element_by_name("NumberOfUsers").send_keys('10')
+                    # 予約ボタン押下
+                    driver.find_element_by_xpath(
+                        '//button[@class="btn blue submit-form-new"][@type="button"]').click()
+                    driver.implicitly_wait(10)
+
+                    # ダブルブッキングした場合
+                    alert_msg = driver.find_element_by_xpath('//section[@class="alert error active"]')
+                    if alert_msg:
+                        print(str(iter_date) + " " + day_name + "  " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は既に取られています')
+                        driver.find_element_by_xpath('//div[@class="btnCircle close"][@id="close-entry"]').click()
+                        driver.implicitly_wait(10)
+                    else:
+                        print(str(iter_date) + " " + day_name + " " + room_name + str(start_time) + '-' + str(
+                            end_time) + ' は予約完了')
+
+                except selenium.common.exceptions.UnexpectedAlertPresentException:
+                    print(str(iter_date) + " " + day_name + " " + str(start_time) + '-' + str(end_time) + ' は祝日です')
+                except NoSuchElementException:
+                    pass
+                except ElementNotInteractableException:
+                    print("クリックできませんでした。")
+
 
 # 実行するメソッドを指定する
 if __name__ == '__main__':
-    # 　実行しないメソッドはシャープを行の先頭に入れてコメントアウトしてください。
+    # 実行しないメソッドはシャープを行の先頭に入れてコメントアウトしてください。
     """
-    1: 応接室, 　2: 大会議室, 　3: SouthTerrace, 　4: Core - A　6: 事業部長会議室　
-    7: N - A, 　8: N - B, 9: N - C, 10: N - D, 11: N - E, 12: N - F
-    13: S - A, 　14: S - B, 15: S - C, 16: S - D, 17: S - E
+    1: 応接室, 　2: 大会議室, 　3: SouthTerrace, 　4: Core - A　6: FR事業部長会議室　
+    7: 流サ事業部長会議室, 　8: N -A, 9: N - B, 10: N - C, 11: N - D, 12: N - E
+    13: S - A, 　14: S - C, 15: S - D, 16: S - E
     """
     # 開始時間, 終了時間, 会議室名, 会議室番号の順です。最後の引数は、11など会議室の該当数字(上記参照)の箇所のみご変更ください。
-    test_mtg = Main()
-    test_mtg.my_mtg()
+
+    # MUJI会議
+    #muji_mtg = Main()
+    # muji_mtg.tue_mtg('11:00', '12:00', '(火)', '大会議室', '//div[@class="tl ui-selectee"][@data-timeline="2"]')　
+
+    # ビジシス定例
+    ndbs_mtg = Main()
+    ndbs_mtg.thu_mtg('16:00', '18:00', '(木)', 'South_Terrace', '//div[@class="tl ui-selectee"][@data-timeline="3"]')
+
 
     # 下記が毎日予約する場合に変更する箇所です
+    # OMS試験朝会用
     omsTest_mtg = Main()
-    omsTest_mtg.everyday_mtg('09:30', '19:00', 'N-E', '//div[@class="tl ui-selectee"][@data-timeline="11"]')
+    # omsTest_mtg.everyday_mtg('09:30', '19:00', 'N-E', '//div[@class="tl ui-selectee"][@data-timeline="11"]')
+
+    # 平塚が予約している朝会用
+    hiratuka_mtg = Main()
+    hiratuka_mtg.everyday_mtg('09:30', '10:15', 'S-E', '//div[@class="tl ui-selectee"][@data-timeline="16"]')
