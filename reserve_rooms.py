@@ -39,7 +39,7 @@ driver.get(url)
 
 # ログイン情報
 login_id = 'Uから始まるID'
-com_id = 'nttdata'
+com_id = ''
 password = 'パスードを入力してください'
 
 """
