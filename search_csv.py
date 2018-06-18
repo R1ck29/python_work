@@ -5,64 +5,81 @@ import pandas as pd
 import os
 import csv
 import collections as cl
-import json
 
-# データが格納されている作業ディレクトリまでパス指定
+
+# move to work directory
 os.chdir("C:/Users/p003230/Documents/賞データ移行")
 
-def make_lists():
-    df = pd.read_csv("new_error_stf_info.csv", engine='python', encoding="utf_8")
 
-    # put errored staff No to list
-    stf_no = df['idou.sya_bg'].values
-
-    # put errored reward date to list
-    rwd_date = df['sybtrk.sybdate'].values
-
-    return stf_no, rwd_date
+df = pd.read_csv("new_error_stf_info.csv", engine='python', encoding="utf_8")
 
 
-# TODO: merge 2 lists into dict
+# put error staff No to list
+stf_no = df['idou.sya_bg'].values
 
-"""
-ys = cl.OrderedDict()
-for i in range(len(stf_no)):
-    data = cl.OrderedDict()
-    data["rwd_date"] = rwd_date[i]
-
-    ys[stf_no[i]] = data
-print(ys)
-#print("{}".format(json.dumps(ys,indent=4)))
-
-fw = open('test.json', 'w')
-# ココ重要！！
-# json.dump関数でファイルに書き込む
-#json.dump(ys, fw, indent=4)
-"""
+# put error reward date to list
+rwd_date = df['sybtrk.sybdate'].values
 
 
-
-# --------------search--------------
 # TODO: make it print error msg
+stf_df = pd.read_csv("社員番号_入社日_退社日.csv", engine='python', encoding="utf_8")
 
-def search_stf(stf_no):
-    stf_df = pd.read_csv("社員番号_入社日_退社日.csv", engine='python', encoding="utf_8")
 
-    for errors in stf_no:
+def search_stf():
+    """
+    find staff who retired or not joined
+    :return:
+    """
 
-        df_exact = stf_df[stf_df['STF_ADMN_NO'] == errors]
-       # print(df_exact)
+    for i in stf_no:
 
-        if str(df_exact) in "Empty DataFrame":
-            print(errors + "は存在しない社員です。")
+        df_exact = stf_df[stf_df['STF_ADMN_NO'] == i]
+
+        if "Empty DataFrame" in df_exact:
+            print("Employee no. " + i + "does not exist")
         else:
-            # search through csv
-            print(df_exact)
+            # append every matched staff info in csv file
+            df_exact.to_csv("matched_stf_info.csv", index=False, header=None, mode='a')
 
-       # df_exact.to_csv("matched_stf_info.csv", index=False, header=None, mode='a')
-    return
-make_lists()
-search_stf()
+    return print('Done mapping')
 
 
+def check_date():
+    """
+    compare reward received date with his/her entry date and leaving date.
+
+    :return: print emploee number, whether he/she not joined or retired
+    """
+    matched_df = pd.read_csv("matched_stf_info.csv", engine='python', encoding="utf_8")
+
+    # TODO: matched_stf_info.csv's column name.
+    # put entry date No to list
+    entry_date = matched_df['ENTRY_DATE'].values
+
+    # put leaving date to list
+    leaving_date = matched_df['LEAVING_DATE'].values
+    t = 0
+
+    for i in rwd_date:
+
+        if i < entry_date[t]:
+            print("Employee number " + str(stf_no[t]) + " has not joined. "
+                  + "Reward date: " + str(i) + " < " + "Entry date: " + str(entry_date[t]))
+            result = pd.DataFrame([[stf_no[t], str(i), str(entry_date[t]), str(leaving_date[t]), "not joined"]],
+                                    columns=['stf_no', 'reward_date', 'entry_date', 'leaving_date', 'result'])
+            result.to_csv("errored_stf_status.csv", index=False, mode='a')
+        if i > leaving_date[t]:
+
+            print("Employee number " + str(stf_no[t]) + " already left. "
+                  + "Reward date: " + str(i) + " > " + "Leaving date: " + str(leaving_date[t]))
+            result = pd.DataFrame([[stf_no[t], str(i), str(entry_date[t]), str(leaving_date[t]), "retired"]],
+                                    columns=['stf_no', 'reward_date', 'entry_date', 'leaving_date', 'result'])
+
+            result.to_csv("errored_stf_status.csv", index=False, header=None, mode='a')
+        #result.to_csv("errored_stf_status.csv", index=False, mode='a')
+        t += 1
+    return print('Done checking')
+
+#search_stf()
+check_date()
 
