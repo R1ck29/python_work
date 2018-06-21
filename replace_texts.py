@@ -21,14 +21,14 @@ r_fname1 = inifile.get("config","extension")
 r_fname2 = inifile.get("config","name")
 
 #置換文字列を指定
-name_old = inifile.get("config","name_old") #この文字を含むファイルを操作＋ファイル名の置換元文字列
-name_new = inifile.get("config","name_new") #ファイル名の置換後文字列
-url_old = inifile.get("config","url_old") #ファイル内の置換元 文字列
-url_new = inifile.get("config","url_new") #ファイル内の置換後文字列
-screenshot_old = inifile.get("config","screenshot_old") #ファイル内の置換元 文字列
-screenshot_new = inifile.get("config","screenshot_new") #ファイル内の置換後文字列
-password_old = inifile.get("config","password_old") #ファイル内の置換元 文字列
-password_new = inifile.get("config","password_new") #ファイル内の置換後文字列
+#name_old = inifile.get("config","name_old") #この文字を含むファイルを操作＋ファイル名の置換元文字列
+#name_new = inifile.get("config","name_new") #ファイル名の置換後文字列
+text_old = inifile.get("config","text_old") #ファイル内の置換元 文字列
+text_new = inifile.get("config","text_new") #ファイル内の置換後文字列
+#screenshot_old = inifile.get("config","screenshot_old") #ファイル内の置換元 文字列
+#screenshot_new = inifile.get("config","screenshot_new") #ファイル内の置換後文字列
+#password_old = inifile.get("config","password_old") #ファイル内の置換元 文字列
+#password_new = inifile.get("config","password_new") #ファイル内の置換後文字列
 
 #正規表現のコンパイル
 txt = re.compile(r_fname2)
