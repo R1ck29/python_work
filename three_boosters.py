@@ -73,7 +73,7 @@ test.visitStartTime = pd.to_datetime(test.visitStartTime, unit='s')
 train["date"] = train.visitStartTime
 test["date"] = test.visitStartTime
 
-#
+# visitStartTimeをインデックスに設定し、ソートする
 train.set_index("visitStartTime", inplace=True)
 test.set_index("visitStartTime", inplace=True)
 train.sort_index(inplace=True)
@@ -201,7 +201,7 @@ for col in real_cols:
     train[col] = train[col].astype(float)
     test[col] = test[col].astype(float)
 
-#
+# "date", "sessionId", "visitId", "day"列を削除
 for to_del in ["date", "sessionId", "visitId", "day"]:
     del train[to_del]
     del test[to_del]
@@ -229,7 +229,7 @@ from sklearn.model_selection import GroupKFold
 
 
 class KFoldValidation():
-    def __init__(self, data, n_splits=5):
+    def __init__(self, data, n_splits=10):  # changed from 5 splits
         unique_vis = np.array(sorted(data['fullVisitorId'].astype(str).unique()))
         folds = GroupKFold(n_splits)
         ids = np.arange(data.shape[0])
@@ -280,7 +280,9 @@ class KFoldValidation():
         print("Final score: ", full_score)
         return full_score
 
+
 Kfolder = KFoldValidation(train)
+
 
 # LGBM Prams
 lgbmodel = lgb.LGBMRegressor(n_estimators=1000, objective="regression", metric="rmse", num_leaves=31, min_child_samples=100,
@@ -292,7 +294,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # Execute
 Kfolder.validate(train, test, real_cols + cat_cols, lgbmodel, "lgbpred", prepare_stacking=True)
 
-# User-Level
+#############　User-Level  ###############################
 # Make one user one object:
 # * all features are averaged
 # * we hope, that categorical features do not change for one user (that's not true :/ )
@@ -332,8 +334,7 @@ for f in features:
     if f not in user_test.columns:
         user_test[f] = np.nan
 
-# warning off
-warnings.simplefilter(action='ignore', category=FutureWarning)
+
 # Meta-models
 Kfolder = KFoldValidation(user_train)
 
@@ -342,7 +343,8 @@ lgbmodel = lgb.LGBMRegressor(n_estimators=1000, objective="regression", metric="
                       learning_rate=0.03, bagging_fraction=0.7, feature_fraction=0.5, bagging_frequency=5,  # changed from 0.03
                       bagging_seed=2019, subsample=.9, colsample_bytree=.9,
                             use_best_model=True)
-
+# warning off
+warnings.simplefilter(action='ignore', category=FutureWarning)
 Kfolder.validate(user_train, user_test, features, lgbmodel, name="lgbfinal", prepare_stacking=True)
 
 # XGBoost
@@ -350,12 +352,15 @@ xgbmodel = xgb.XGBRegressor(max_depth=22, learning_rate=0.02, n_estimators=1000,
                                          objective='reg:linear', gamma=1.45, seed=2019, silent=False,
                                         subsample=0.67, colsample_bytree=0.054, colsample_bylevel=0.50)
 
-
+# warning off
+warnings.simplefilter(action='ignore', category=FutureWarning)
 Kfolder.validate(user_train, user_test, features, xgbmodel, name="xgbfinal", prepare_stacking=True)
 
 # CatBoost
 catmodel = cat.CatBoostRegressor(iterations=500, learning_rate=0.2, depth=5, random_seed=2019)
 
+# warning off
+warnings.simplefilter(action='ignore', category=FutureWarning)
 Kfolder.validate(user_train, user_test, features, catmodel, name="catfinal", prepare_stacking=True,
                 fit_params={"use_best_model": True, "verbose": 100})
 
@@ -372,4 +377,4 @@ output_path = '/Users/rick/Dropbox/python_projects/data_science/Kaggle/GA_custom
 
 user_test['PredictedLogRevenue'] = 0.6 * user_test["lgbfinal"] + 0.4 * user_test["catfinal"] + 0.2 * user_test["xgbfinal"]
 
-user_test[['PredictedLogRevenue']].to_csv(output_path + 'leaky_submission_' + today + '.csv', index=True)
+user_test[['PredictedLogRevenue']].to_csv(output_path + 'three_boosters_submission_' + today + '.csv', index=True)
