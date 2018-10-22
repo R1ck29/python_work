@@ -1,9 +1,10 @@
-#! /usr/bin/env python3
+#! python3
 # coding: utf-8
 
 import datetime
 import pandas as pd
 import numpy as np
+import os
 
 # DRAGONS
 import xgboost as xgb
@@ -29,11 +30,17 @@ warnings.simplefilter("ignore")
 import gc
 gc.enable()
 
+
+#input_file_path = '/Users/rick/Dropbox/python_projects/data_science/Kaggle/GA_customer_revenue_prediction/input'
+input_file_path = "C:/Users/p003230/PycharmProjects/python_projects/kaggle/GoogleAnalyticsCustomerRevenuePrediction/input"
+
+#output_path = '/Users/rick/Dropbox/python_projects/data_science/Kaggle/GA_customer_revenue_prediction/output/'
+output_path = 'C:/Users/p003230/PycharmProjects/python_projects/kaggle/GoogleAnalyticsCustomerRevenuePrediction/output'
+
 #  Load Files
-input_file_path = '/Users/rick/Dropbox/python_projects/data_science/Kaggle/GA_customer_revenue_prediction/input'
 train = pd.read_csv(input_file_path + '/extracted_fields_train.gz', dtype={'date': str, 'fullVisitorId': str, 'sessionId':str, 'visitId': np.int64})
 test = pd.read_csv(input_file_path + '/extracted_fields_test.gz', dtype={'date': str, 'fullVisitorId': str, 'sessionId':str, 'visitId': np.int64})
-train.shape, test.shape
+print(train.shape, test.shape)
 
 # Getting data from leak
 train_store_1 = pd.read_csv(input_file_path + '/Train_external_data.csv', low_memory=False, skiprows=6, dtype={"Client Id":'str'})
@@ -42,19 +49,23 @@ test_store_1 = pd.read_csv(input_file_path + '/Test_external_data.csv', low_memo
 test_store_2 = pd.read_csv(input_file_path + '/Test_external_data_2.csv', low_memory=False, skiprows=6, dtype={"Client Id":'str'})
 
 # Getting VisitId from Google Analytics...
+print("Getting VisitId from Google Analytics...")
 for df in [train_store_1, train_store_2, test_store_1, test_store_2]:
     df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
 
 
 # Merge with train/test data
+print("Merging with train/test data...")
 train = train.merge(pd.concat([train_store_1, train_store_2], sort=False), how="left", on="visitId")
 test = test.merge(pd.concat([test_store_1, test_store_2], sort=False), how="left", on="visitId")
 
 # Drop Client Id
+print("Dropping Client ID...")
 for df in [train, test]:
     df.drop("Client Id", 1, inplace=True)
 
 # Cleaning Revenue
+print("Cleaning Revenue")
 for df in [train, test]:
     df["Revenue"].fillna('$', inplace=True)
     df["Revenue"] = df["Revenue"].apply(lambda x: x.replace('$', '').replace(',', ''))
@@ -73,11 +84,12 @@ test.visitStartTime = pd.to_datetime(test.visitStartTime, unit='s')
 train["date"] = train.visitStartTime
 test["date"] = test.visitStartTime
 
-# visitStartTimeをインデックスに設定し、ソートする
+#
 train.set_index("visitStartTime", inplace=True)
 test.set_index("visitStartTime", inplace=True)
 train.sort_index(inplace=True)
 test.sort_index(inplace=True)
+
 
 # Clearing rare categoriesa and setting 0 to NaNs
 def clearRare(columnname, limit=1000):
@@ -93,6 +105,7 @@ def clearRare(columnname, limit=1000):
     train.loc[train[columnname].map(lambda x: x not in common), columnname] = 'other'
     test.loc[test[columnname].map(lambda x: x not in common), columnname] = 'other'
     print("now there are", train[columnname].nunique(), "categories in train")
+
 
 train.fillna(0, inplace=True)
 test.fillna(0, inplace=True)
@@ -197,11 +210,12 @@ for col in cat_cols:
     test[col] = lbl.transform(list(test[col].values.astype('str')))
 
 # change data type to float
+# 数字はフロートに変換
 for col in real_cols:
     train[col] = train[col].astype(float)
     test[col] = test[col].astype(float)
 
-# "date", "sessionId", "visitId", "day"列を削除
+#　不要なカラムの削除
 for to_del in ["date", "sessionId", "visitId", "day"]:
     del train[to_del]
     del test[to_del]
@@ -209,11 +223,15 @@ for to_del in ["date", "sessionId", "visitId", "day"]:
 # Preparing Validations
 excluded = ['date', 'fullVisitorId', 'sessionId', 'totals.transactionRevenue', 'visitId', 'visitStartTime', "month", "help"]
 
+# int64でexcludedにないカラムはカテゴリカラムに設定
 cat_cols = [f for f in train.columns if (train[f].dtype == 'int64' and f not in excluded)]
+# カテゴリカラムとexcludedにないカラムにないカラムを設定
 real_cols = [f for f in train.columns if (not f in cat_cols and f not in excluded)]
 
 # Function to tell us the score using the metric we actually care about
 from sklearn.metrics import mean_squared_error
+
+
 def score(data, y):
     validation_res = pd.DataFrame(
     {"fullVisitorId": data["fullVisitorId"].values,
@@ -224,12 +242,13 @@ def score(data, y):
     return np.sqrt(mean_squared_error(np.log1p(validation_res["transactionRevenue"].values),
                                      np.log1p(validation_res["predictedRevenue"].values)))
 
+
 # Cute function to validate and prepare stacking
 from sklearn.model_selection import GroupKFold
 
 
 class KFoldValidation():
-    def __init__(self, data, n_splits=10):  # changed from 5 splits
+    def __init__(self, data, n_splits=5):
         unique_vis = np.array(sorted(data['fullVisitorId'].astype(str).unique()))
         folds = GroupKFold(n_splits)
         ids = np.arange(data.shape[0])
@@ -242,7 +261,7 @@ class KFoldValidation():
             ])
 
     def validate(self, train, test, features, model, name="", prepare_stacking=False,
-                 fit_params={"early_stopping_rounds": 50, "verbose": 100, "eval_metric": "rmse"}):  # changed from 50
+                 fit_params={"early_stopping_rounds": 50, "verbose": 100, "eval_metric": "rmse"}):  # changed from 50, verbose changed from 100
         model.FI = pd.DataFrame(index=features)
         full_score = 0
 
@@ -283,23 +302,23 @@ class KFoldValidation():
 
 Kfolder = KFoldValidation(train)
 
-
 # LGBM Prams
 lgbmodel = lgb.LGBMRegressor(n_estimators=1000, objective="regression", metric="rmse", num_leaves=31, min_child_samples=100,
-                      learning_rate=0.03, bagging_fraction=0.7, feature_fraction=0.5, bagging_frequency=5,  # changed from 0.03
+                      learning_rate=0.03, bagging_fraction=0.7, feature_fraction=0.5, min_data_in_leaf=5, bagging_frequency=5,  # changed from min_child_weight=15
                       bagging_seed=2019, subsample=.9, colsample_bytree=.9, use_best_model=True)
 
-# warning off
-warnings.simplefilter(action='ignore', category=FutureWarning)
+
 # Execute
+print("-"* 20 + "LightGBM Training" + "-"* 20)
 Kfolder.validate(train, test, real_cols + cat_cols, lgbmodel, "lgbpred", prepare_stacking=True)
 
-#############　User-Level  ###############################
+# User-Level
 # Make one user one object:
 # * all features are averaged
 # * we hope, that categorical features do not change for one user (that's not true :/ )
 # * categoricals labels are averaged (!!!) and are treated as numerical features (o_O)
 # * predictions are averaged in multiple ways...
+
 
 def create_user_df(df):
     agg_data = df[real_cols + cat_cols + ['fullVisitorId']].groupby('fullVisitorId').mean()
@@ -340,32 +359,31 @@ Kfolder = KFoldValidation(user_train)
 
 # LightGBM
 lgbmodel = lgb.LGBMRegressor(n_estimators=1000, objective="regression", metric="rmse", num_leaves=31, min_child_samples=100,
-                      learning_rate=0.03, bagging_fraction=0.7, feature_fraction=0.5, bagging_frequency=5,  # changed from 0.03
-                      bagging_seed=2019, subsample=.9, colsample_bytree=.9,
-                            use_best_model=True)
-# warning off
-warnings.simplefilter(action='ignore', category=FutureWarning)
+                      learning_rate=0.03, bagging_fraction=0.7, feature_fraction=0.5, min_data_in_leaf=5, bagging_frequency=5,  # changed from min_data_in_leaf 15
+                      bagging_seed=2019, subsample=.9, colsample_bytree=.9, use_best_model=True)
+
+print("-"* 20 + "User-Level LightGBM Training" + "-" * 20)
 Kfolder.validate(user_train, user_test, features, lgbmodel, name="lgbfinal", prepare_stacking=True)
+print("-"* 20 + "Done Training" + "-"* 20)
 
 # XGBoost
 xgbmodel = xgb.XGBRegressor(max_depth=22, learning_rate=0.02, n_estimators=1000,
-                                         objective='reg:linear', gamma=1.45, seed=2019, silent=False,
+                                         objective='reg:linear', gamma=1.45, seed=2019, silent=True,  # min_child_weight 15
                                         subsample=0.67, colsample_bytree=0.054, colsample_bylevel=0.50)
 
-# warning off
-warnings.simplefilter(action='ignore', category=FutureWarning)
+print("-" * 20 + "User-Level XGBoost Training" + "-" * 20)
 Kfolder.validate(user_train, user_test, features, xgbmodel, name="xgbfinal", prepare_stacking=True)
+print("-"* 20 + "Done Training" + "-"* 20)
 
 # CatBoost
 catmodel = cat.CatBoostRegressor(iterations=500, learning_rate=0.2, depth=5, random_seed=2019)
 
-# warning off
-warnings.simplefilter(action='ignore', category=FutureWarning)
+print("-" * 20 + "User-Level CatBoost Training" + "-" * 20)
 Kfolder.validate(user_train, user_test, features, catmodel, name="catfinal", prepare_stacking=True,
                 fit_params={"use_best_model": True, "verbose": 100})
-
+print("-" * 20 + "Done Training" + "-" * 20)
 # Ensembling dragons
-user_train['PredictedLogRevenue'] = 0.6 * user_train["lgbfinal"] + \
+user_train['PredictedLogRevenue'] = 0.4 * user_train["lgbfinal"] + \
                                     0.2 * user_train["xgbfinal"] + \
                                     0.4 * user_train["catfinal"]
 
@@ -373,8 +391,9 @@ score(user_train, user_train.PredictedLogRevenue)
 
 print('Saving result to csv...')
 today = datetime.datetime.today().strftime("%Y_%m_%d")  # フォーマットの指定
-output_path = '/Users/rick/Dropbox/python_projects/data_science/Kaggle/GA_customer_revenue_prediction/output/'
 
-user_test['PredictedLogRevenue'] = 0.6 * user_test["lgbfinal"] + 0.4 * user_test["catfinal"] + 0.2 * user_test["xgbfinal"]
+user_test['PredictedLogRevenue'] = 0.4 * user_test["lgbfinal"] + 0.4 * user_test["catfinal"] + 0.2 * user_test["xgbfinal"]
+os.chdir(output_path)
+user_test[['PredictedLogRevenue']].to_csv('three_boosters_submission_' + today + '.csv', index=True)
 
-user_test[['PredictedLogRevenue']].to_csv(output_path + 'three_boosters_submission_' + today + '.csv', index=True)
+print("Combined: ", score(user_train, user_train.PredictedLogRevenue))
