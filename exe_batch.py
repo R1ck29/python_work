@@ -3,11 +3,11 @@
 
 import paramiko
 
-k = paramiko.RSAKey.from_private_key_file("C:/tools/new_login_ttl/suzukirke.key")
+k = paramiko.RSAKey.from_private_key_file("key_name.key")
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 print("connecting")
-c.connect(hostname="34.234.6.51", username="", pkey=k)
+c.connect(hostname="", username="", pkey=k)
 print("connected")
 
 ssh_command = 'ssh -t -t admin@192.168.2.65'
