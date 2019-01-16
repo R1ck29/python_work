@@ -11,7 +11,7 @@ import fuzzywuzzy
 from fuzzywuzzy import process
 import chardet
 
-os.chdir("C:/Users/p003230/Documents/育成計画マッピング")
+os.chdir("hoge")
 
 fuzzy_file = 'test_fuzzy.csv'
 
