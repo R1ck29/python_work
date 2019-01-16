@@ -9,7 +9,7 @@ list = []
 
 
 def concat_csv():
-    input_file_path = 'C:/評価系ツール/取り込むフォルダ/勤怠遡及/単価/'
+    input_file_path = 'hoge'
     os.chdir(input_file_path)
     csv_files = glob.glob('*.csv')
     #cp932
@@ -22,7 +22,7 @@ def concat_csv():
 
 
 def concat_excel():
-    input_file_path = 'C:/評価系ツール/取り込むフォルダ/勤怠遡及/社員情報/'
+    input_file_path = 'hoge'
     os.chdir(input_file_path)
 
     path = os.getcwd()
@@ -50,7 +50,7 @@ def concat_excel():
 
 concat_excel()
 
-# input_file_path = 'C:/評価系ツール/取り込むフォルダ/勤怠遡及/社員情報/'
+# input_file_path = 'hoge'
 # os.chdir(input_file_path)
 #
 # input_book = pd.ExcelFile('201608.xlsx')
