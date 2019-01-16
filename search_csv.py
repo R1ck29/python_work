@@ -8,7 +8,7 @@ import collections as cl
 
 
 # move to work directory
-os.chdir("C:/Users/p003230/Documents/賞データ移行")
+os.chdir("hoge")
 
 
 df = pd.read_csv("new_error_stf_info.csv", engine='python', encoding="utf_8")
