@@ -8,8 +8,8 @@ import csv
 # move to work directory
 os.chdir("C:/tools/CSV")
 
-df01 = pd.read_csv('HUE比較用_賞データ_fsta.csv', engine='python', encoding='Shift-JIS') # HUEに入れたデータ
-df02 = pd.read_csv('HUE_賞データ(f-sta).csv', engine='python', encoding='Shift-JIS') # HUEから取り出したデータ
+df01 = pd.read_csv('比較用_賞データ_fsta.csv', engine='python', encoding='Shift-JIS') # HUEに入れたデータ
+df02 = pd.read_csv('賞データ(f-sta).csv', engine='python', encoding='Shift-JIS') # HUEから取り出したデータ
 
 df01['diff'] = df01[['idou_sya_bg', 'sybtrk_sybt_cd']].apply(lambda x: '{}_{}'.format(x[0], x[1]), axis=1)
 
