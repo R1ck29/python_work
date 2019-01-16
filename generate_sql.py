@@ -4,7 +4,7 @@
 import create_file
 import os
 
-file_path = 'C:/Users/nttdata/Desktop/SQL/test/'
+file_path = 'hoge'
 
 file_name = 'after_cart_generated.sql'
 
