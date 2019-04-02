@@ -10,7 +10,7 @@ print("connecting")
 c.connect(hostname="", username="", pkey=k)
 print("connected")
 
-ssh_command = 'ssh -t -t admin@192.168.2.65'
+ssh_command = 'ssh -t -t admin@192.***.*.**'
 
 """
 #method 1
@@ -32,7 +32,7 @@ print(c.exec_command(test_command))
 c = paramiko.SSHClient()
 c.load_system_host_keys()
 try:
-    c.connect(hostname="192.168.2.65", username="", password="")
+    c.connect(hostname="192.***.*.**", username="", password="")
 
     command = 'ls'
     print("Executing {}".format(command))
